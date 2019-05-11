@@ -1,0 +1,17 @@
+{
+  "name": "arrow-to-parquet-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "apache-arrow": "0.13.0",
+    "ix": "2.5.3",
+    "parquetjs": "0.10.1"
+  }
+}
