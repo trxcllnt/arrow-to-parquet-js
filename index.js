@@ -1,5 +1,6 @@
 const parquet = require('parquetjs');
 const { AsyncIterable } = require('ix');
+const { RandomAccessFile } = require('apache-arrow/io/file');
 const { Table, IntVector, Utf8Vector } = require('apache-arrow');
 
 const { toParquetSchema } = require('./toparquettype');
@@ -10,7 +11,7 @@ const table = Table.new({
 });
 
 (async () => {
-    const rows = AsyncIterable.from(table[Symbol.iterator]());
+    const rows = AsyncIterable.from(table);
     const schema = new parquet.ParquetSchema(toParquetSchema(table.schema));
     const stream = rows.toNodeStream({ objectMode: true }).pipe(new parquet.ParquetTransformer(schema));
     const buffer = await AsyncIterable.fromNodeStream(stream).toArray().then((bufs) => Buffer.concat(bufs));
@@ -30,28 +31,18 @@ async function* getCursor(reader) {
 
 async function createParquetBufferReader(buffer) {
 
-    const bufferReader = new BufferReader(buffer);
-    const readFn = bufferReader.fread.bind(bufferReader);
-    const closeFn = bufferReader.fclose.bind(bufferReader);
-    const envelopeReader = new parquet.ParquetEnvelopeReader(readFn, closeFn, buffer.byteLength);
+    const file = new RandomAccessFile(buffer);
+    const reader = new parquet.ParquetEnvelopeReader(
+        (x, y) => Buffer.from(file.readAt(x, y)),
+        file.close.bind(file), buffer.byteLength
+    );
 
     try {
-        await envelopeReader.readHeader();
-        let metadata = await envelopeReader.readFooter();
-        return new parquet.ParquetReader(metadata, envelopeReader);
+        await reader.readHeader();
+        let metadata = await reader.readFooter();
+        return new parquet.ParquetReader(metadata, reader);
     } catch (err) {
-        await envelopeReader.close();
+        await reader.close();
         throw err;
-    }
-}
-
-class BufferReader {
-    constructor(buffer) {
-        this.buffer = buffer;
-    }
-    async fread(position, length) {
-        return this.buffer.subarray(position, position + length);
-    }
-    async fclose() {
     }
 }

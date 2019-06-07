@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "apache-arrow": "0.13.0",
+    "apache-arrow": "trxcllnt/apache-arrow-js",
     "ix": "2.5.3",
     "parquetjs": "0.10.1"
   }
